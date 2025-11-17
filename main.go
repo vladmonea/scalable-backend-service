@@ -24,7 +24,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 func newServer(port string) *gracefulServer {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handle)
-	httpServer := &http.Server{Addr: port, Handler: mux}
+	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
 	return &gracefulServer{httpServer: httpServer}
 }
 
@@ -51,7 +51,7 @@ func (server *gracefulServer) shutdown() error {
 }
 
 func main() {
-	port := "8080"
+	var port string
 
 	flag.StringVar(&port, "port", "8080", "./server -port 8080")
 	flag.Parse()
