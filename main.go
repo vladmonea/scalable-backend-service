@@ -32,17 +32,12 @@ func withTimer(handler http.Handler) http.Handler {
 		t1 := time.Now()
 		log.Default().Printf("Timing traffic on route %s", r.URL.Path)
 		handler.ServeHTTP(w, r)
-		t2 := time.Now()
-		log.Default().Printf("Request took %d nanoseconds", t2.UnixNano()-t1.UnixNano())
+		defer log.Default().Printf("Request took %d nanoseconds", time.Now().UnixNano()-t1.UnixNano())
 	})
 }
 
 func (server *gracefulServer) preStart() {
-	currentHandler := server.httpServer.Handler
-	loggerHandler := withSimpleLogger(currentHandler)
-	server.httpServer.Handler = loggerHandler
-	timerHandler := withTimer(loggerHandler)
-	server.httpServer.Handler = timerHandler
+	server.httpServer.Handler = withTimer(withSimpleLogger(server.httpServer.Handler))
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
