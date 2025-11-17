@@ -9,21 +9,54 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
+
+var welcomeMsg = "Welcome to the graceful server! 💃🏼\n"
 
 type gracefulServer struct {
 	httpServer *http.Server
 	listener   net.Listener
 }
 
+func withSimpleLogger(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Default().Printf("Incoming traffic on route %s", r.URL.Path)
+		log.Default().Printf("Request: %v", r)
+		handler.ServeHTTP(w, r)
+	})
+}
+
+func withTimer(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t1 := time.Now()
+		log.Default().Printf("Timing traffic on route %s", r.URL.Path)
+		handler.ServeHTTP(w, r)
+		t2 := time.Now()
+		log.Default().Printf("Request took %d nanoseconds", t2.UnixNano()-t1.UnixNano())
+	})
+}
+
+func (server *gracefulServer) preStart() {
+	currentHandler := server.httpServer.Handler
+	loggerHandler := withSimpleLogger(currentHandler)
+	server.httpServer.Handler = loggerHandler
+	timerHandler := withTimer(loggerHandler)
+	server.httpServer.Handler = timerHandler
+}
+
 func handle(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Incoming request: %v", r)
 	io.WriteString(w, "hallo fraulain!\n")
+}
+
+func greetingHandler(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, welcomeMsg)
 }
 
 func newServer(port string) *gracefulServer {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handle)
+	mux.HandleFunc("/greeting", greetingHandler)
 	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
 	return &gracefulServer{httpServer: httpServer}
 }
@@ -62,6 +95,7 @@ func main() {
 
 	server := newServer(port)
 
+	server.preStart()
 	err := server.start()
 	if err != nil {
 		log.Fatalf("Error starting server - %v\n", err)
@@ -69,7 +103,7 @@ func main() {
 
 	go func() {
 		sig := <-interrupts
-		log.Default().Printf("Received shutdown signal - %v\n", sig)
+		log.Default().Printf("Signal intercepted - %v\n", sig)
 		server.shutdown()
 		done <- true
 	}()
