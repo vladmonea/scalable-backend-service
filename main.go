@@ -12,7 +12,10 @@ import (
 	"time"
 )
 
-var welcomeMsg = "Welcome to the graceful server! 💃🏼\n"
+var (
+	welcomeMsg = "Welcome to the graceful server! 💃🏼\n"
+	helloMsg   = "hallo fraulain!\n"
+)
 
 type gracefulServer struct {
 	httpServer *http.Server
@@ -41,7 +44,7 @@ func (server *gracefulServer) preStart() {
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "hallo fraulain!\n")
+	io.WriteString(w, helloMsg)
 }
 
 func greetingHandler(w http.ResponseWriter, r *http.Request) {
