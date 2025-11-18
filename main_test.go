@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+var helloMsg = "hallo fraulain!\n"
+
 func TestAPISuccess(t *testing.T) {
 	res, err := http.Get("http://localhost:8080/")
 	if err != nil {
