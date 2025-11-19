@@ -10,7 +10,9 @@ import (
 	"syscall"
 
 	"scalable-backend-service/logger"
-	"scalable-backend-service/middleware"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"go.uber.org/zap"
 )
@@ -27,16 +29,18 @@ func (server *GracefulServer) PreStart() error {
 		log.Println(errMsg)
 		return errors.New(errMsg)
 	}
-	server.httpServer.Handler = middleware.WithTimer(middleware.WithSimpleLogger(server.httpServer.Handler))
 	return nil
 }
 
 func NewServer(port string) *GracefulServer {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", SimpleHandler)
-	mux.HandleFunc("/greeting", GreetingHandler)
+	router := chi.NewRouter()
+	router.Use(middleware.Logger)
+	router.Get("/", SimpleHandler)
+	router.Get("/greeting/{name}", GreetingHandler)
 
-	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
+	router.Get("/greeting", GreetingHandler)
+
+	httpServer := &http.Server{Addr: ":" + port, Handler: router}
 	return &GracefulServer{httpServer: httpServer}
 }
 
