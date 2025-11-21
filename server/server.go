@@ -40,6 +40,8 @@ func NewServer(port string) *GracefulServer {
 
 	router.Get("/greeting", GreetingHandler)
 
+	router.Get("/users", UserHandler)
+
 	httpServer := &http.Server{Addr: ":" + port, Handler: router}
 	return &GracefulServer{httpServer: httpServer}
 }
