@@ -1,10 +1,13 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
+
+	"scalable-backend-service/users"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -32,7 +35,7 @@ func GreetingHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, greeting)
 }
 
-func UserHandler(w http.ResponseWriter, r *http.Request) {
+func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
 	age := r.URL.Query().Get("age")
 	if name != "" || age != "" {
@@ -41,15 +44,33 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Undefined input param"))
 		}
-		for _, user := range getUsers() {
-			if user.name == name || user.age == age {
+		for _, user := range users.GetUsers() {
+			if user.Name == name || user.Age == age {
 				w.WriteHeader(http.StatusOK)
-				io.WriteString(w, fmt.Sprintf("Found user with the name %s and age %d\n", user.name, user.age))
+				io.WriteString(w, fmt.Sprintf("Found user with the name %s and age %d\n", user.Name, user.Age))
 				break
 			}
 		}
 	} else {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("No request params passed\n"))
+		response := ListUserResponse{Users: users.GetUsers()}
+		data, _ := json.Marshal(response)
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
 	}
+}
+
+func AddUserHandler(w http.ResponseWriter, r *http.Request) {
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	var request Request
+	err = json.Unmarshal(data, &request)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	users.AddUser(request.Name, request.Age)
+	w.WriteHeader(http.StatusOK)
 }

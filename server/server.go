@@ -17,11 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type GracefulServer struct {
-	httpServer *http.Server
-	listener   net.Listener
-}
-
 func (server *GracefulServer) PreStart() error {
 	logger := logger.InitLogger()
 	if logger == nil {
@@ -40,7 +35,8 @@ func NewServer(port string) *GracefulServer {
 
 	router.Get("/greeting", GreetingHandler)
 
-	router.Get("/users", UserHandler)
+	router.Get("/users", GetUserHandler)
+	router.Post("/users", AddUserHandler)
 
 	httpServer := &http.Server{Addr: ":" + port, Handler: router}
 	return &GracefulServer{httpServer: httpServer}
